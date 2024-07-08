@@ -119,6 +119,7 @@ def get_loaders(
     seqlen=2048,
     model="",
     cache_dir="~/.cache/",
+    path_to_model=None
 ):
     if model == "pythia":
         model_id = f"EleutherAI/pythia-{model_size}-deduped"
@@ -128,7 +129,10 @@ def get_loaders(
         # use 7b tokenizer because 1.1B doesn't have it's own
         model_id = f"meta-llama/Llama-2-7b-hf"
     elif model == "llama":
-        model_id = f"meta-llama/Llama-2-{model_size}-hf"
+        if path_to_model:
+            model_id = path_to_model
+        else:
+            model_id = f"meta-llama/Llama-2-{model_size}-hf"
     else:
         raise ValueError(f"Unknown model {model}")
 

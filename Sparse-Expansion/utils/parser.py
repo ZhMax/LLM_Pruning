@@ -39,6 +39,20 @@ def get_parser():
         help="Name of the model (llama/pythia)",
     )
     sparse_group.add_argument(
+        "-pm",
+        "--path_to_model",
+        type=str,
+        required=True,
+        help="Path to the model",
+    )   
+    sparse_group.add_argument(
+        "-out",
+        "--output_path",
+        type=str,
+        required=True,
+        help="Path to save the pruned model",
+    )  
+    sparse_group.add_argument(
         "-ms", "--model_size", type=str, required=True, help="Size of the model"
     )
     sparse_group.add_argument(

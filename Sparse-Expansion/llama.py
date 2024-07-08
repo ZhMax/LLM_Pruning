@@ -28,6 +28,7 @@ def llama_sequential(
     pca_reduction_factor,
     num_clusters,
     verbose=False,
+    output_path=None
 ):
     print("Starting")
     print("Sparsity", sparsity)
@@ -487,6 +488,15 @@ def llama_sequential(
     if model.model.norm is not None:
         model.model.norm = model.model.norm.to(dev)
     model.lm_head = model.lm_head.to(dev)
+
+    if output_path:
+        if verbose:
+            print(f"Model has been pruned. Saving now...")
+        
+        model.save_pretrained(output_path)
+        
+        if verbose:
+            print(f"Model has been saved in {output_path}")
 
     testenc = testenc.to(dev)
     nlls = []

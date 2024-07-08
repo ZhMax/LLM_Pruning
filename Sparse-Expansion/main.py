@@ -23,6 +23,7 @@ def main():
         model=args.model,
         seqlen=CONTEXT_LENGTH,
         cache_dir=args.cache_dir,
+        path_to_model=args.path_to_model
     )
 
     assert len(dataloader) == args.dataset_size, "Dataset size mismatch!"
@@ -41,7 +42,7 @@ def main():
         dev = torch.device("cuda:1")
 
     if args.model == "llama":
-        model = get_llama(args.model_size, cache_dir=args.cache_dir)
+        model = get_llama(args.model_size, cache_dir=args.cache_dir, path_to_model=args.path_to_model)
         model.seqlen = CONTEXT_LENGTH
         from llama import llama_sequential
 
@@ -58,6 +59,7 @@ def main():
             args.PCA_reduction_factor,
             args.num_clusters,
             args.verbose,
+            args.output_path
         )
 
     elif args.model == "pythia":
