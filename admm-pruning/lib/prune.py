@@ -442,7 +442,6 @@ def prune_admm(args, model, tokenizer, dev, prune_n=0, prune_m=0):
     position_ids = cache['position_ids']
 
     print('Ready.')
-
     for i in range(len(layers)):
         layer = layers[i]
         if f"model.layers.{i}" in model.hf_device_map:
@@ -467,6 +466,7 @@ def prune_admm(args, model, tokenizer, dev, prune_n=0, prune_m=0):
 
         for j in range(args.nsamples):
             outs[j] = layer(inps[j].unsqueeze(0), attention_mask=attention_mask, position_ids=position_ids)[0]
+            breakpoint()
         for h in handles:
             h.remove()
 
