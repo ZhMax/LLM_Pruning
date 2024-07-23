@@ -500,7 +500,7 @@ def llama_sequential(
 
     testenc = testenc.to(dev)
     nlls = []
-    for i in tqdm.tqdm(range(len(dataloader), len(inps))):
+    for i in range(len(dataloader), len(inps)):
         hidden_states = inps[i]
         if model.model.norm is not None:
             hidden_states = model.model.norm(hidden_states)
