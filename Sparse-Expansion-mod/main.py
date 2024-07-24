@@ -11,8 +11,8 @@ def main():
 
     # seqlen is 4096 for llama models and 2048 for pythia models
     if args.model == "llama":
-        # CONTEXT_LENGTH = 4096
-        CONTEXT_LENGTH = 128
+        CONTEXT_LENGTH = 4096
+        # CONTEXT_LENGTH = 128
     else:
         CONTEXT_LENGTH = 2048
 

@@ -155,7 +155,8 @@ def get_llama(model_size, cache_dir=None, path_to_model=None):
         else:
             model_id = f"meta-llama/Llama-2-{model_size}-hf"
     model = AutoModelForCausalLM.from_pretrained(
-        model_id
+        model_id,
+        torch_dtype = torch.bfloat16
     )
     
     # if cache_dir is not None:

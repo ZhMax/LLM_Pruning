@@ -10,14 +10,14 @@ from tqdm import tqdm
 from utils.datautils import *
 from utils.sparsegpt import *
 
-from moe_from_dense.make_moe import make_moe_blocks
-from moe_from_dense.modelutils import find_layers
-from moe_from_dense.clusteringutils import (
+from moetools.make_moe import make_moe_blocks
+from moetools.modelutils import find_layers
+from moetools.clusteringutils import (
     make_and_apply_PCA, 
     make_and_apply_KMeans,
     make_clustered
 )
-from moe_from_dense.moe_linear import ClusteredLinear
+from moetools.moe_linear import ClusteredLinear
 
 
 @torch.no_grad()
@@ -44,8 +44,8 @@ def llama_sequential(
     intermediate_dim = model.config.intermediate_size
 
     print("Insert MoE blocks into the model...")
-    num_local_experts = num_clusters
-    num_experts_per_tok = 2
+    num_local_experts = 0
+    num_experts_per_tok = 1
 
     model = make_moe_blocks(
         model,
@@ -58,8 +58,11 @@ def llama_sequential(
         "quant_method": "moe",
         "num_local_experts": num_local_experts,
         "num_experts_per_tok": num_experts_per_tok,
-        "pca_reduction_factor": pca_reduction_factor,
-        "mlp_blocks_not_to_replace": None
+        "mlp_blocks_not_to_replace": None,
+        "linear_layers": {
+            "pca_reduction_factor": pca_reduction_factor,
+            "num_clusters": num_clusters
+        }
     }
 
     print("MoE blocks have been inserted...")
@@ -229,10 +232,11 @@ def llama_sequential(
                 subset[name].kmeans_model = copy.deepcopy(kmeans_up_gate)
                 subset[name].pca_model = copy.deepcopy(pca_up_gate_clustering)
                 for cluster in range(num_clusters):
-                    subset[name].add_layer(
-                        copy.deepcopy(subset[name].layers[0])
-                    )
-                    gpts[name][cluster] = SparseGPT(subset[name].layers[-1])
+                    gpts[name][cluster] = SparseGPT(subset[name])
+                    # subset[name].add_layer(
+                    #     copy.deepcopy(subset[name].layers[0])
+                    # )
+                    # gpts[name][cluster] = SparseGPT(subset[name].layers[-1])
 
         batch_number_up = [0]
         batch_number_gate = [0]
@@ -283,17 +287,19 @@ def llama_sequential(
                         mse=False,
                     )
                 if isinstance(sparsity, tuple):
-                    gpts[name][cluster].fasterprune(
+                    mask = gpts[name][cluster].fasterprune(
                         sparsity=0,
                         prunen=sparsity[0],
                         prunem=sparsity[1],
                         percdamp=0.01,
                     )
                 else:
-                    gpts[name][cluster].fasterprune(
+                    mask = gpts[name][cluster].fasterprune(
                         sparsity=sparsity,
                         percdamp=0.01,
                     )
+                
+                subset[name].add_mask(mask)
 
                 gpts[name][cluster].free()
                 del gpts[name][cluster]
@@ -378,10 +384,11 @@ def llama_sequential(
                 subset[name].kmeans_model = kmeans_down
                 subset[name].pca_model = pca_down_clustering
                 for cluster in range(num_clusters):
-                    subset[name].add_layer(
-                        copy.deepcopy(subset[name].layers[0])
-                    )
-                    gpts[name][cluster] = SparseGPT(subset[name].layers[-1])
+                    gpts[name][cluster] = SparseGPT(subset[name])
+                    # subset[name].add_layer(
+                    #     copy.deepcopy(subset[name].layers[0])
+                    # )
+                    # gpts[name][cluster] = SparseGPT(subset[name].layers[-1])
 
         batch_number_down = [0]
 
@@ -424,17 +431,19 @@ def llama_sequential(
                         mse=False,
                     )
                 if isinstance(sparsity, tuple):
-                    gpts[name][cluster].fasterprune(
+                    mask = gpts[name][cluster].fasterprune(
                         sparsity=0,
                         prunen=sparsity[0],
                         prunem=sparsity[1],
                         percdamp=0.01,
                     )
                 else:
-                    gpts[name][cluster].fasterprune(
+                    mask = gpts[name][cluster].fasterprune(
                         sparsity=sparsity,
                         percdamp=0.01,
                     )
+
+                subset[name].add_mask(mask)
 
                 gpts[name][cluster].free()
                 del gpts[name][cluster]
@@ -520,8 +529,8 @@ def llama_sequential(
     if output_path:
         if verbose:
             print(f"Model has been pruned. Saving now...")
-        model.save_pretrained(output_path, max_shard_size='8GB')
-        # model.save_pretrained(output_path)
+        # model.save_pretrained(output_path, max_shard_size='8GB')
+        model.save_pretrained(output_path)
         
         if verbose:
             print(f"Model has been saved in {output_path}")

@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 from torch import pca_lowrank
 from cuml import KMeans as cuml_KMeans
-# from kmeans_pytorch import kmeans_predict as pt_kmeans_predict
+from kmeans_pytorch import kmeans_predict as pt_kmeans_predict
 from moetools.moe_linear import ClusteredLinear
 
 class torchPCA(nn.Module):
@@ -163,13 +163,14 @@ def make_clustered(module, names, name="", num_clusters=1):
         tmp = getattr(module, attr)
         name1 = name + "." + attr if name != "" else attr
         if name1 in names:
-            setattr(
-                module,
-                attr,
-                ClusteredLinear(
-                    getattr(module, attr), num_clusters=num_clusters
-                ),
+            orig_layer = getattr(module, attr)
+            layer = ClusteredLinear(
+                orig_layer.in_features, orig_layer.out_features,
+                num_clusters=num_clusters
             )
+            layer.weight = orig_layer.weight
+            setattr(module, attr, layer)
+
     for name1, child in module.named_children():
         make_clustered(
             child,

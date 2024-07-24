@@ -175,11 +175,22 @@ class SparseGPT:
 
         if isinstance(self.layer, transformers.Conv1D):
             W = W.t()
-        self.layer.weight.data = W.reshape(self.layer.weight.shape).to(
-            self.layer.weight.data.dtype
-        )
+        # self.layer.weight.data = W.reshape(self.layer.weight.shape).to(
+        #     self.layer.weight.data.dtype
+        # )
+        
         if DEBUG:
             print(torch.sum((self.layer(self.inp1) - self.out1) ** 2))
+        
+        W = W.reshape(self.layer.weight.shape)
+        mask = (W != 0.0)
+        mask = mask.to(device=W.device)
+
+        # mask = W.reshape(self.layer.weight.shape).to(
+        #     self.layer.weight.data.dtype
+        # )
+
+        return mask
 
     def free(self):
         if DEBUG:
