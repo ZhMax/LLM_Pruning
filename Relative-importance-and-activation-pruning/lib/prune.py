@@ -57,7 +57,7 @@ def find_layers(module, layers=[nn.Linear], name=''):
 def check_sparsity(args, model):
     use_cache = model.config.use_cache 
     model.config.use_cache = False 
-    if "llama" in args.model:
+    if "llama" in args.model.lower():
         layers = model.model.layers
     elif "opt" in args.model:
         layers = model.model.decoder.layers
@@ -89,7 +89,7 @@ def check_sparsity(args, model):
 def prepare_calibration_input(args, model, dataloader, device):
     use_cache = model.config.use_cache
     model.config.use_cache = False
-    if "llama" in args.model:
+    if "llama" in args.model.lower():
         layers = model.model.layers
         # dev = model.hf_device_map["model.embed_tokens"]
         if "model.embed_tokens" in model.hf_device_map:
@@ -112,7 +112,7 @@ def prepare_calibration_input(args, model, dataloader, device):
             inps[cache['i']] = inp
             cache['i'] += 1
             cache['attention_mask'] = kwargs['attention_mask']
-            if "llama" in args.model:
+            if "llama" in args.model.lower():
                 cache['position_ids'] = kwargs['position_ids']
 
             raise ValueError
@@ -128,7 +128,7 @@ def prepare_calibration_input(args, model, dataloader, device):
     attention_mask = cache['attention_mask']
    
     model.config.use_cache = use_cache
-    if "llama" in args.model:
+    if "llama" in args.model.lower():
         position_ids = cache['position_ids']
         return inps, outs, attention_mask, position_ids 
     elif "opt" in args.model:
@@ -136,7 +136,7 @@ def prepare_calibration_input(args, model, dataloader, device):
 
 
 def prune_magnitude(args, model, tokenizer, device=torch.device("cuda:0"), prune_n=0, prune_m=0):
-    if "llama" in args.model:
+    if "llama" in args.model.lower():
         layers = model.model.layers
     elif "opt" in args.model:
         layers = model.model.decoder.layers
@@ -179,11 +179,11 @@ def prune_ria(args, model, tokenizer, device=torch.device("cuda:0"), prune_n=0, 
     dataloader, _ = get_loaders(args.calib_dataset,nsamples=args.nsamples,seed=args.seed,seqlen=args.seqlen,tokenizer=tokenizer)
     print("dataset loading complete")
     with torch.no_grad():
-        if "llama" in args.model:
+        if "llama" in args.model.lower():
             inps, outs, attention_mask, position_ids = prepare_calibration_input(args, model, dataloader, device)
         elif "opt" in args.model:
             inps, outs, attention_mask= prepare_calibration_input(args, model, dataloader, device)
-    if "llama" in args.model:
+    if "llama" in args.model.lower():
         layers = model.model.layers
     elif "opt" in args.model:
         layers = model.model.decoder.layers
@@ -192,7 +192,7 @@ def prune_ria(args, model, tokenizer, device=torch.device("cuda:0"), prune_n=0, 
     for i in range(len(layers)):
         layer = layers[i]
         subset = find_layers(layer)
-        if "llama" in args.model:
+        if "llama" in args.model.lower():
             if f"model.layers.{i}" in model.hf_device_map:   ## handle the case for llama-30B and llama-65B, when the device map has multiple GPUs;
                 dev = model.hf_device_map[f"model.layers.{i}"]
                 # inps, outs, attention_mask, position_ids = inps.to(dev), outs.to(dev), attention_mask.to(dev), position_ids.to(dev)
@@ -216,7 +216,7 @@ def prune_ria(args, model, tokenizer, device=torch.device("cuda:0"), prune_n=0, 
             handles.append(subset[name].register_forward_hook(add_batch(name)))
         for j in range(args.nsamples):
             with torch.no_grad():
-                if "llama" in args.model:
+                if "llama" in args.model.lower():
                     outs[j] = layer(inps[j].unsqueeze(0), attention_mask=attention_mask, position_ids=position_ids)[0]
                 elif "opt" in args.model:
                     outs[j] = layer(inps[j].unsqueeze(0), attention_mask=attention_mask)[0]
@@ -301,7 +301,7 @@ def prune_ria(args, model, tokenizer, device=torch.device("cuda:0"), prune_n=0, 
                         """
                             Using linear sum assignment to finetune the N:M
                         """
-                        permutation_device = "cuda:7"
+                        permutation_device = "cuda:0"
                         if args.fast:
                             print("Use Fast!!")
                             fast_name_list = ["self_attn.q_proj", "self_attn.k_proj", "self_attn.v_proj", "self_attn.o_proj"]
@@ -417,7 +417,7 @@ def prune_ria(args, model, tokenizer, device=torch.device("cuda:0"), prune_n=0, 
 
         for j in range(args.nsamples):
             with torch.no_grad():
-                if "llama" in args.model:
+                if "llama" in args.model.lower():
                     outs[j] = layer(inps[j].unsqueeze(0), attention_mask=attention_mask, position_ids=position_ids)[0]
                 elif "opt" in args.model:
                     outs[j] = layer(inps[j].unsqueeze(0), attention_mask=attention_mask)[0]
@@ -436,7 +436,7 @@ def prune_sparsegpt(args, model, tokenizer, dev, prune_n=0, prune_m=0):
 
     use_cache = model.config.use_cache
     model.config.use_cache = False
-    if "llama" in args.model:
+    if "llama" in args.model.lower():
         layers = model.model.layers
     elif "opt" in args.model:
         layers = model.model.decoder.layers
@@ -458,7 +458,7 @@ def prune_sparsegpt(args, model, tokenizer, dev, prune_n=0, prune_m=0):
             inps[cache['i']] = inp
             cache['i'] += 1
             cache['attention_mask'] = kwargs['attention_mask']
-            if "llama" in args.model:
+            if "llama" in args.model.lower():
                 cache['position_ids'] = kwargs['position_ids']
             raise ValueError
     layers[0] = Catcher(layers[0])
@@ -478,7 +478,7 @@ def prune_sparsegpt(args, model, tokenizer, dev, prune_n=0, prune_m=0):
 
     for i in range(len(layers)):
         layer = layers[i]
-        if "llama" in args.model:
+        if "llama" in args.model.lower():
             if f"model.layers.{i}" in model.hf_device_map:
                 dev = model.hf_device_map[f"model.layers.{i}"]
                 print(f"layer {i} device {dev}")
@@ -500,7 +500,7 @@ def prune_sparsegpt(args, model, tokenizer, dev, prune_n=0, prune_m=0):
             handles.append(subset[name].register_forward_hook(add_batch(name)))
 
         for j in range(args.nsamples):
-            if "llama" in args.model:
+            if "llama" in args.model.lower():
                 outs[j] = layer(inps[j].unsqueeze(0), attention_mask=attention_mask, position_ids=position_ids)[0]
             else:
                 outs[j] = layer(inps[j].unsqueeze(0), attention_mask=attention_mask)[0]
@@ -518,7 +518,7 @@ def prune_sparsegpt(args, model, tokenizer, dev, prune_n=0, prune_m=0):
             gpts[name].free()
 
         for j in range(args.nsamples):
-            if "llama" in args.model:
+            if "llama" in args.model.lower():
                 outs[j] = layer(inps[j].unsqueeze(0), attention_mask=attention_mask, position_ids=position_ids)[0]
             else:
                 outs[j] = layer(inps[j].unsqueeze(0), attention_mask=attention_mask)[0]
