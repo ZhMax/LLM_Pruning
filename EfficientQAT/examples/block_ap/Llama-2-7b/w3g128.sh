@@ -1,0 +1,13 @@
+CUDA_VISIBLE_DEVICES=0 python main_block_ap.py \
+--model /home/LLaMA/huggingface/Llama-2-7b-hf  \
+--output_dir /home/exp_results/efficient_qat/block_ap/Llama-2-7b-w3g128-real \
+--net Llama-2 \
+--wbits 3 \
+--group_size 128 \
+--calib_dataset redpajama \
+--train_size 4096 \
+--training_seqlen 2048 \
+--real_quant \
+--quant_lr 1e-4 \
+--weight_lr 1e-5 \
+--save_quant_dir /home/exp_results/efficient_qat/block_ap/Llama-2-7b-w3g128-real
