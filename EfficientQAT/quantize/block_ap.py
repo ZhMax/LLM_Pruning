@@ -38,6 +38,10 @@ def block_ap(
     logger=None,
 ):
     logger.info("Starting ...")
+    if args.path_to_sensitivity_metric is not None:
+        logger.info("load state_dict with values of sensitivity metric")
+        sens_metric = torch.load(args.path_to_sensitivity_metric)
+
     if args.off_load_to_disk:
         logger.info("offload the training dataset to disk, saving CPU memory, but may slowdown the training due to additional I/O...")
     
@@ -165,7 +169,24 @@ def block_ap(
         qlayer = copy.deepcopy(layer)
         for name, module in qlayer.named_modules():
             if isinstance(module,torch.nn.Linear):
-                quantlinear = int_linear_fake.QuantLinear(module, args.wbits, args.group_size)
+                if args.num_outlier_cols > 0:
+                    outlier_ids = torch.sort(
+                        sens_metric[f'model.layers.{block_index}.{name}'], 
+                        descending=False
+                    )[1]
+                    outlier_ids = outlier_ids[-args.num_outlier_cols:]
+                    training_mode = args.training_mode
+                else:
+                    outlier_ids = None
+                    training_mode = 'full'
+
+                quantlinear = int_linear_fake.QuantLinear(
+                    module, 
+                    args.wbits, 
+                    args.group_size, 
+                    outlier_ids,
+                    training_mode
+                )
                 set_op_by_name(qlayer, name, quantlinear)  
                 del module  
         qlayer.to(dev)

@@ -75,7 +75,18 @@ def set_quant_state(model, weight_quant: bool = False):
 def quant_inplace(model):
     for name, module in model.named_modules():
         if isinstance(module, QuantLinear):
-            module.weight.data = module.weight_quantizer(module.weight.data)
+            if hasattr(module, 'mask'):
+                mask = module.mask
+                q_weight = module.weight_quantizer(
+                    module.weight[:, mask].data
+                )
+                fp_weight = module.weight[:, ~mask]
+                weight = torch.hstack([q_weight, fp_weight])
+                inv_col_perm = module.inv_col_perm
+                weight = weight[:, inv_col_perm]
+                module.weight.data = weight.data
+            else:
+                module.weight.data = module.weight_quantizer(module.weight.data)                
 
 
 class TruncateFunction(torch.autograd.Function):

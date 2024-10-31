@@ -94,6 +94,9 @@ def main():
     parser.add_argument("--max_memory", type=str, default="70GiB",help="The maximum memory of each GPU")
     parser.add_argument("--early_stop", type=int, default=0,help="early stoping after validation loss do not decrease")
     parser.add_argument("--off_load_to_disk", action="store_true", default=False, help="save training dataset to disk, saving CPU memory but may reduce training speed")
+    parser.add_argument("--path_to_sensitivity_metric", default=None, type=str, help="file with values of sensitivity metric")
+    parser.add_argument("--num_outlier_cols", default=0, type=int, help="file with values of sensitivity metric") 
+    parser.add_argument("--training_mode", default='quant', type=str, help="Mode for training weight matrices: 'quant', 'outlier', or 'full' ")    
 
     os.environ['TOKENIZERS_PARALLELISM'] = 'false'
     args = parser.parse_args()
@@ -151,7 +154,7 @@ def main():
                     seqlen=args.training_seqlen,
                 )
                 torch.save(trainloader, cache_trainloader)    
-                torch.save(valloader, cache_valloader)    
+                torch.save(valloader, cache_valloader)
             block_ap(
                 model,
                 args,
